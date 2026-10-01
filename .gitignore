@@ -1,0 +1,26 @@
+# Build output and downloads: these go on the Releases page, not in the repo
+*.exe
+*.zip
+*.pdf
+dist/
+build/
+
+# The manager's own runtime data (settings, logs, game server, backups)
+data/
+EnshroudedServer/
+*.log
+manager.pid
+
+# Node (in case source is added later)
+node_modules/
+npm-debug.log*
+package-lock.json
+.env
+.env.*
+
+# OS / editor
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
