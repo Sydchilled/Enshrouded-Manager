@@ -1,0 +1,327 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ChillWithSyd — Enshrouded Server Manager</title>
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-mark">CWS</span>
+    <div>
+      <h1>Enshrouded Server Manager</h1>
+      <p class="subtitle">ChillWithSyd — Windows dedicated server panel</p>
+    </div>
+  </div>
+  <div class="status-pill" id="statusPill">
+    <span class="dot" id="statusDot"></span>
+    <span id="statusText">Checking…</span>
+  </div>
+</header>
+
+<nav class="tabs" id="tabs">
+  <button class="tab active" data-tab="quickstart">Quick Setup</button>
+  <button class="tab" data-tab="dashboard">Dashboard</button>
+  <button class="tab" data-tab="setup">Advanced: Setup / Install</button>
+  <button class="tab" data-tab="config">Advanced: Config</button>
+  <button class="tab" data-tab="backups">Advanced: Backups</button>
+  <button class="tab" data-tab="logs">Advanced: Logs</button>
+</nav>
+
+<main>
+
+<section id="tab-quickstart" class="panel active">
+  <div class="card highlight">
+    <h2>Get your server running — one button</h2>
+    <p class="hint">This installs everything it needs, creates your server, and starts it. It's safe to click even
+      if you've already run it before — it'll just update things and restart.</p>
+
+    <div class="form-grid">
+      <label>Server name (shows up in the server browser)
+        <input type="text" id="qsServerName" value="ChillWithSyd Enshrouded Server" />
+      </label>
+      <label>Password to give your friends
+        <input type="text" id="qsPassword" placeholder="Choose a password" />
+      </label>
+      <label>Player slots
+        <input type="number" min="1" max="16" id="qsSlotCount" value="16" />
+      </label>
+      <label>Difficulty
+        <select id="qsPreset">
+          <option>Default</option><option>Relaxed</option><option>Hard</option><option>Survival</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="btn-row" style="margin-top: 14px;">
+      <button class="btn btn-primary btn-big" id="btnQuickstart">Install &amp; Start My Server</button>
+    </div>
+
+    <pre id="quickstartLog" class="console" style="margin-top: 16px;"></pre>
+    <div id="quickstartResult"></div>
+  </div>
+
+  <div class="card">
+    <h2>Once it's running</h2>
+    <p class="hint">Give your friends your address and this port so they can find you in the Steam server browser:
+      <strong id="qsQueryPortHint">15637</strong>. Share the password above with people you want to let in.
+      Use the <strong>Dashboard</strong> tab any time to stop, start, or check on the server. Everything else
+      (fine-tuning gameplay rules, backups, logs) lives under the <strong>Advanced</strong> tabs — you don't need
+      them to just play.</p>
+  </div>
+</section>
+
+<section id="tab-dashboard" class="panel">
+  <div class="banner warn">
+    <strong>Known limitations (confirmed during setup):</strong> Enshrouded has no RCON, no admin console, and no
+    remote save/kick — those only work in-game. There is also no confirmed graceful-shutdown command, so
+    <strong>Stop</strong> and <strong>Restart</strong> below hard-kill the process. The game's own autosave runs
+    roughly every 10 minutes regardless, and the Backups tab adds an independent copy on top of that.
+  </div>
+
+  <div class="card-row">
+    <div class="card">
+      <h2>Lifecycle</h2>
+      <div class="lifecycle-info">
+        <div><span class="label">State</span><span id="lifecycleState">—</span></div>
+        <div><span class="label">PID</span><span id="lifecyclePid">—</span></div>
+        <div><span class="label">Uptime</span><span id="lifecycleUptime">—</span></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" id="btnStart">Start</button>
+        <button class="btn btn-danger" id="btnStop">Stop</button>
+        <button class="btn btn-warn" id="btnRestart">Restart</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Quick info</h2>
+      <div class="lifecycle-info">
+        <div><span class="label">Install dir</span><span id="infoInstallDir">—</span></div>
+        <div><span class="label">Query port</span><span id="infoQueryPort">—</span></div>
+        <div><span class="label">Slots</span><span id="infoSlots">—</span></div>
+        <div><span class="label">Config file</span><span id="infoConfigExists">—</span></div>
+        <div><span class="label">Players online</span><span id="infoPlayersOnline">—</span></div>
+      </div>
+      <p class="hint">Best-effort live count, queried from the server's own query port — not from the game itself,
+        since Enshrouded has no RCON/admin API to ask directly. Shows "Unknown" if it can't get an answer (server
+        just started, query port blocked/misconfigured, etc.) rather than guessing.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Live console</h2>
+    <pre id="console" class="console"></pre>
+  </div>
+</section>
+
+<section id="tab-setup" class="panel">
+  <div class="card">
+    <h2>Paths</h2>
+    <p class="hint">SteamCMD and the game install are kept in separate folders on purpose — running steamcmd.exe
+      from inside the game's own folder is a known way to make it nest the install under
+      <code>steamapps\common\...</code> instead of honoring the install directory below.</p>
+    <div class="form-grid">
+      <label>Install directory (enshrouded_server.exe lands here)
+        <div class="input-with-button">
+          <input type="text" id="settingInstallDir" />
+          <button type="button" class="btn btn-small" data-browse-for="settingInstallDir">Browse…</button>
+        </div>
+      </label>
+      <label>SteamCMD directory
+        <div class="input-with-button">
+          <input type="text" id="settingSteamCmdDir" />
+          <button type="button" class="btn btn-small" data-browse-for="settingSteamCmdDir">Browse…</button>
+        </div>
+      </label>
+      <label>Backup directory
+        <div class="input-with-button">
+          <input type="text" id="settingBackupDir" />
+          <button type="button" class="btn btn-small" data-browse-for="settingBackupDir">Browse…</button>
+        </div>
+      </label>
+      <label>Panel port (requires restart of this manager)
+        <input type="number" id="settingPanelPort" />
+      </label>
+    </div>
+    <p class="hint" id="browseUnsupportedHint" hidden>Browse buttons open a native Windows folder picker, so they
+      only work when this manager is actually running on Windows — type the path in by hand here instead.</p>
+    <div class="btn-row">
+      <button class="btn btn-primary" id="btnSaveSettings">Save paths</button>
+      <button class="btn" id="btnImportHere">Import existing install from this folder</button>
+    </div>
+    <p class="hint">"Save paths" just remembers the folder. "Import existing install from this folder" also
+      checks that <code>enshrouded_server.exe</code> is actually there and loads its
+      <code>enshrouded_server.json</code> if it's ever been run — use that one when adopting a server you already
+      have.</p>
+    <div id="pathsImportResult" class="banner info" hidden></div>
+  </div>
+
+  <div class="card">
+    <h2>Already running a server the old way? Import your .bat file</h2>
+    <p class="hint">If you've got an existing bare-bones install — a plain <code>enshrouded_server.exe</code>
+      started by double-clicking a simple <code>.bat</code> file — paste that file's contents (or pick the file)
+      below. This reads both the <code>.bat</code> file and, once it's found the folder, your existing
+      <code>enshrouded_server.json</code>, and tells you plainly whether the import succeeded.</p>
+    <label>Paste the .bat file's contents here
+      <textarea id="batImportText" class="raw-textarea" rows="4" placeholder='e.g.&#10;cd /d "C:\Servers\Enshrouded"&#10;enshrouded_server.exe'></textarea>
+    </label>
+    <div class="btn-row">
+      <input type="file" id="batImportFile" accept=".bat,.cmd,.txt" />
+      <button class="btn btn-primary" id="btnParseBat">Detect install folder</button>
+    </div>
+    <div id="batImportResult" class="banner info" hidden></div>
+  </div>
+
+  <div class="card">
+    <h2>SteamCMD &amp; server install</h2>
+    <div class="lifecycle-info">
+      <div><span class="label">SteamCMD installed</span><span id="steamCmdInstalled">—</span></div>
+      <div><span class="label">Server exe installed</span><span id="serverExeInstalled">—</span></div>
+    </div>
+    <p class="hint">Installs/updates Steam app <code>2278520</code> (Enshrouded Dedicated Server, anonymous login —
+      no Steam account needed).</p>
+    <div class="btn-row">
+      <button class="btn btn-primary" id="btnInstallSteamCmd">Install SteamCMD</button>
+      <button class="btn btn-primary" id="btnUpdateServer">Install / Update server</button>
+    </div>
+    <pre id="steamcmdConsole" class="console small"></pre>
+  </div>
+</section>
+
+<section id="tab-config" class="panel">
+  <div class="banner info" id="configMissingBanner" hidden>
+    <strong>enshrouded_server.json doesn't exist yet</strong> — Enshrouded only generates it after the server has
+    run once. You can generate a template here and edit it before the first real start, or start the server once
+    first and come back to edit the real generated file.
+    <div class="btn-row">
+      <button class="btn btn-primary" id="btnGenerateDefault">Generate default config here</button>
+    </div>
+  </div>
+
+  <div class="config-tabs">
+    <button class="config-subtab active" data-subtab="server">Server</button>
+    <button class="config-subtab" data-subtab="gameplay">Gameplay (Custom preset)</button>
+    <button class="config-subtab" data-subtab="groups">User groups &amp; bans</button>
+    <button class="config-subtab" data-subtab="raw">Raw JSON</button>
+  </div>
+
+  <div id="configsub-server" class="config-subpanel active">
+    <div class="card">
+      <h2>Server settings</h2>
+      <div class="form-grid">
+        <label>Name<input type="text" id="cfgName" /></label>
+        <label>IP bind<input type="text" id="cfgIp" /></label>
+        <label>Query port<input type="number" id="cfgQueryPort" /></label>
+        <label>Slot count (1–16)<input type="number" min="1" max="16" id="cfgSlotCount" /></label>
+        <label>Save directory<input type="text" id="cfgSaveDirectory" /></label>
+        <label>Log directory<input type="text" id="cfgLogDirectory" /></label>
+        <label>Voice chat mode
+          <select id="cfgVoiceChatMode"><option>Proximity</option><option>Global</option></select>
+        </label>
+        <label class="checkbox-label"><input type="checkbox" id="cfgEnableVoiceChat" /> Enable voice chat</label>
+        <label class="checkbox-label"><input type="checkbox" id="cfgEnableTextChat" /> Enable text chat</label>
+        <label>Gameplay preset
+          <select id="cfgGameSettingsPreset">
+            <option>Default</option><option>Relaxed</option><option>Hard</option><option>Survival</option><option>Custom</option>
+          </select>
+        </label>
+      </div>
+      <p class="hint">The Gameplay tab below is only applied by the server when the preset is set to
+        <strong>Custom</strong> — otherwise it's silently ignored.</p>
+    </div>
+  </div>
+
+  <div id="configsub-gameplay" class="config-subpanel">
+    <div class="card">
+      <h2>Gameplay settings (used only when preset = Custom)</h2>
+      <div class="form-grid" id="gameplayFieldsContainer"></div>
+    </div>
+  </div>
+
+  <div id="configsub-groups" class="config-subpanel">
+    <div class="card">
+      <h2>User groups</h2>
+      <p class="hint">Up to 10 groups. Whoever connects with a group's password gets that group's permissions —
+        there's no separate admin login. A player with "can kick/ban" cannot be removed by another admin except by
+        changing that group's password and restarting the server.</p>
+      <div id="userGroupsContainer"></div>
+      <div class="btn-row">
+        <button class="btn" id="btnAddGroup">+ Add group</button>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Banned accounts</h2>
+      <p class="hint">Bans are normally added in-game by a group with kick/ban rights; this list is the persisted
+        result. Edit with care.</p>
+      <textarea id="bannedAccountsRaw" class="raw-textarea" rows="4" placeholder="One entry per line"></textarea>
+    </div>
+  </div>
+
+  <div id="configsub-raw" class="config-subpanel">
+    <div class="card">
+      <h2>Raw JSON</h2>
+      <p class="hint">Full control, including any fields not covered above. Some third-party tools mention extra
+        top-level fields (e.g. <code>gamePort</code>, <code>bindIP</code>, a top-level <code>password</code>) that
+        couldn't be confirmed against official docs — if your real generated file has them, edit them here.</p>
+      <textarea id="rawJsonEditor" class="raw-textarea" rows="24" spellcheck="false"></textarea>
+    </div>
+  </div>
+
+  <div class="btn-row sticky-save">
+    <button class="btn btn-primary" id="btnSaveConfig">Save config</button>
+    <button class="btn" id="btnReloadConfig">Reload from disk</button>
+    <span id="configSaveMsg" class="hint"></span>
+  </div>
+</section>
+
+<section id="tab-backups" class="panel">
+  <div class="card">
+    <h2>Schedule</h2>
+    <div class="form-grid">
+      <label class="checkbox-label"><input type="checkbox" id="backupEnabled" /> Enable scheduled backups</label>
+      <label>Interval (minutes)<input type="number" min="5" id="backupInterval" /></label>
+      <label>Keep last N backups<input type="number" min="1" id="backupRetention" /></label>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" id="btnSaveSchedule">Save schedule</button>
+      <button class="btn btn-primary" id="btnBackupNow">Back up now</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Backups</h2>
+    <table class="data-table">
+      <thead><tr><th>Name</th><th>Size</th><th>Created</th><th></th></tr></thead>
+      <tbody id="backupsTableBody"></tbody>
+    </table>
+  </div>
+</section>
+
+<section id="tab-logs" class="panel">
+  <div class="card">
+    <h2>Log files</h2>
+    <div class="log-columns">
+      <div>
+        <h3>Manager-captured console output</h3>
+        <ul class="file-list" id="consoleLogList"></ul>
+      </div>
+      <div>
+        <h3>Game logs (server's own logDirectory)</h3>
+        <ul class="file-list" id="gameLogList"></ul>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <h2 id="logViewerTitle">Select a log file</h2>
+    <pre id="logViewerContent" class="console"></pre>
+  </div>
+</section>
+
+</main>
+
+<script src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,20 @@
+{
+  "name": "chillwithsyd-enshrouded-manager",
+  "version": "1.1.0",
+  "description": "Browser-based management panel for an Enshrouded dedicated server (Windows), built for ChillWithSyd.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "build:win": "node scripts/generate-embedded-public.js && pkg server.js --targets node18-win-x64 --output dist/EnshroudedServerManager.exe"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "archiver": "^7.0.1",
+    "express": "^4.19.2",
+    "extract-zip": "^2.0.1",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "pkg": "^5.8.1"
+  }
+}
